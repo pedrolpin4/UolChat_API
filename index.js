@@ -1,6 +1,6 @@
 import express from "express"
 import cors from "cors"
-import dayjs from "dayjs";
+import dayjs from "dayjs"
 
 const app = express();
 app.use(cors());
