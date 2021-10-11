@@ -2,14 +2,21 @@ import express from "express"
 import cors from "cors"
 import dayjs from "dayjs"
 import Joi from "joi";
+import fs from "fs"
 import { stripHtml } from "string-strip-html";
 
 const app = express();
 app.use(cors());
 app.use(express.json())
 
-const participants = [{name: "L"}];
-const messages = [];
+const participantsFile = "data/participants.json";
+const messagesFile = "data/messages.json";
+
+const participants = fs.readFileSync(participantsFile) === [] ? [] : JSON.parse(fs.readFileSync(participantsFile));
+const messages = fs.readFileSync(messagesFile) === [] ? [] : JSON.parse(fs.readFileSync(messagesFile));
+
+
+console.log(participants, messages);
 
 app.post("/participants", (req, res) => {
     let user = req.body;
@@ -23,6 +30,7 @@ app.post("/participants", (req, res) => {
     if (!userValidation.validate(user).error){
         user.lastStatus = Date.now();
         participants.push(user);
+        fs.writeFileSync(participantsFile, JSON.stringify(participants))
         messages.push({
             from: stripHtml(user.name).result.trim(),
             to: "Todos",
@@ -30,6 +38,7 @@ app.post("/participants", (req, res) => {
             type: "status",
             time: dayjs(user.lastStatus).format("HH:MM:ss") 
         });
+        fs.writeFileSync(messagesFile, JSON.stringify(messages))
         res.status(200).send();
     } else res.status(400).send("Sorry, you have to type your pretty name") 
 
@@ -37,7 +46,7 @@ app.post("/participants", (req, res) => {
 
 app.get("/participants", (req, res) => {
     res.send(JSON.stringify(participants))
-    
+    fs.writeFileSync(participantsFile, JSON.stringify(participants))
 })
 
 app.post("/messages", (req, res) => {
@@ -68,8 +77,9 @@ app.post("/messages", (req, res) => {
 
     if(!messageValidator.validate(verifiedMessage).error && isParticipating){
         verifiedMessage.from = stripHtml(sender).result.trim();
-        verifiedMessage.time = dayjs().format("HH:MM:ss");
+        verifiedMessage.time = dayjs(Date.now()).format("HH:MM:ss");
         messages.push(verifiedMessage);
+        fs.writeFileSync(messagesFile, JSON.stringify(messages))
         res.status(200).send();    
     } else res.status(400).send("this kind of message is not supported")
 })
@@ -93,6 +103,7 @@ app.post("/status", (req, res) => {
         participants.forEach(p => {
             if(p.name === user.trim()){
                 p.lastStatus = Date.now();
+                fs.writeFileSync(participantsFile, JSON.stringify(participants))
             }
         })
         res.status(200).send()
@@ -103,7 +114,9 @@ setInterval(() => {
     participants.forEach((p,i) => {
         if((Date.now() - p.lastStatus) > 10000){
            participants.splice(i,1)
+           fs.writeFileSync(participantsFile, JSON.stringify(participants))
            messages.push({from: p.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format('HH:MM:ss')}) 
+           fs.writeFileSync(messagesFile, JSON.stringify(messages))
         }    
     })
 }, 15000)
