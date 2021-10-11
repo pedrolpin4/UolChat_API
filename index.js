@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json())
 
-const participants = [{name: "L"}];
+const participants = [];
 const messages = [];
 
 app.post("/participants", (req, res) => {
@@ -28,7 +28,7 @@ app.post("/participants", (req, res) => {
             to: "Todos",
             text: "entered the room...",
             type: "status",
-            time: dayjs(user.lastStatus).format("HH:MM:ss") 
+            time: dayjs().format('h:mm:ss A')
         });
         res.status(200).send();
     } else res.status(400).send("Sorry, you have to type your pretty name") 
@@ -68,7 +68,7 @@ app.post("/messages", (req, res) => {
 
     if(!messageValidator.validate(verifiedMessage).error && isParticipating){
         verifiedMessage.from = stripHtml(sender).result.trim();
-        verifiedMessage.time = dayjs().format("HH:MM:ss");
+        verifiedMessage.time = dayjs().format('h:mm:ss A');
         messages.push(verifiedMessage);
         res.status(200).send();    
     } else res.status(400).send("this kind of message is not supported")
@@ -103,7 +103,7 @@ setInterval(() => {
     participants.forEach((p,i) => {
         if((Date.now() - p.lastStatus) > 10000){
            participants.splice(i,1)
-           messages.push({from: p.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format('HH:MM:ss')}) 
+           messages.push({from: p.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs().format('h:mm:ss A')}) 
         }    
     })
 }, 15000)
