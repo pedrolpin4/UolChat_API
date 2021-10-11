@@ -1,30 +1,37 @@
 import express from "express"
 import cors from "cors"
 import dayjs from "dayjs"
+import Joi from "joi";
+import { stripHtml } from "string-strip-html";
 
 const app = express();
 app.use(cors());
 app.use(express.json())
 
-const participants = [];
+const participants = [{name: "L"}];
 const messages = [];
 
 app.post("/participants", (req, res) => {
-    const user = req.body;
-    if (user.name) {
+    let user = req.body;
+    const userValidation = Joi.object({
+        name: Joi.string()
+            .required()
+            .min(1)
+            .trim()
+    })
+
+    if (!userValidation.validate(user).error){
         user.lastStatus = Date.now();
         participants.push(user);
         messages.push({
-            from: user.name,
+            from: stripHtml(user.name).result.trim(),
             to: "Todos",
             text: "entered the room...",
             type: "status",
             time: dayjs(user.lastStatus).format("HH:MM:ss") 
         });
-        console.log(participants, messages);
         res.status(200).send();
-    } 
-    res.status(400).send("Sorry, you have to type your pretty name") 
+    } else res.status(400).send("Sorry, you have to type your pretty name") 
 
 })
 
@@ -35,13 +42,35 @@ app.get("/participants", (req, res) => {
 
 app.post("/messages", (req, res) => {
     const message = req.body;
+    const verifiedMessage = {
+        to: stripHtml(message.to).result.trim(),
+        type: stripHtml(message.type).result.trim(),
+        text: stripHtml(message.text).result.trim()
+    }
     const sender = req.headers.user;
-    console.log(req.headers.user);
+    console.log(verifiedMessage);
+
+    const messageValidator = Joi.object({
+        to: Joi.string()
+            .required()
+            .min(1)
+            .trim(),
+        text: Joi.string()
+            .min(1)
+            .required()
+            .trim(),
+        type: Joi.string()
+            .required()
+            .valid("message", "private_message")
+            .trim()
+    })
+
     const isParticipating = participants.some(p => p.name === sender);
-    if(message.to && message.text && (message.type === "private_message" || message.type === "message") && isParticipating){
-        message.from = sender;
-        message.time = dayjs().format("HH:MM:ss");
-        messages.push(message);
+
+    if(!messageValidator.validate(verifiedMessage).error && isParticipating){
+        verifiedMessage.from = stripHtml(sender).result.trim();
+        verifiedMessage.time = dayjs().format("HH:MM:ss");
+        messages.push(verifiedMessage);
         res.status(200).send();    
     } else res.status(400).send("this kind of message is not supported")
 })
@@ -58,12 +87,12 @@ app.get("/messages", (req, res) => {
 
 app.post("/status", (req, res) => {
     const user = req.headers.user;
-    const isParticipating = participants.some(p => p.name === user);
+    const isParticipating = participants.some(p => p.name === user.trim());
     if(!isParticipating){
         res.status(400).send()
     } else {
         participants.forEach(p => {
-            if(p.name === user){
+            if(p.name === user.trim()){
                 p.lastStatus = Date.now();
             }
         })
