@@ -48,7 +48,6 @@ app.post("/messages", (req, res) => {
         text: stripHtml(message.text).result.trim()
     }
     const sender = req.headers.user;
-    console.log(verifiedMessage);
 
     const messageValidator = Joi.object({
         to: Joi.string()
