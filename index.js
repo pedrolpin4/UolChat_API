@@ -11,16 +11,15 @@ const messages = [];
 
 app.post("/participants", (req, res) => {
     const user = req.body;
-    const participant = {}
     if (user.name) {
         user.lastStatus = Date.now();
         participants.push(user);
         messages.push({
-            from: participant.name,
+            from: user.name,
             to: "Todos",
             text: "entered the room...",
             type: "status",
-            time: dayjs(participant.lastStatus).format("HH:MM:ss") 
+            time: dayjs(user.lastStatus).format("HH:MM:ss") 
         });
         console.log(participants, messages);
         res.status(200).send();
@@ -31,6 +30,7 @@ app.post("/participants", (req, res) => {
 
 app.get("/participants", (req, res) => {
     res.send(JSON.stringify(participants))
+    
 })
 
 app.post("/messages", (req, res) => {
@@ -58,12 +58,12 @@ app.get("/messages", (req, res) => {
 
 app.post("/status", (req, res) => {
     const user = req.headers.user;
-    const isParticipating = participants.some(p => p.name === user.name);
+    const isParticipating = participants.some(p => p.name === user);
     if(!isParticipating){
         res.status(400).send()
     } else {
         participants.forEach(p => {
-            if(p.name === user.name){
+            if(p.name === user){
                 p.lastStatus = Date.now();
             }
         })
@@ -73,7 +73,7 @@ app.post("/status", (req, res) => {
 
 setInterval(() => {
     participants.forEach((p,i) => {
-        if((Date.now() - p.lastStatus) > 10){
+        if((Date.now() - p.lastStatus) > 10000){
            participants.splice(i,1)
            messages.push({from: p.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format('HH:MM:ss')}) 
         }    
