@@ -1,5 +1,6 @@
 {
   "name": "uol-chat-back",
+  "start": "nodemon --ignore ./data/messages.json --ignore ./data/messages.json index.js",
   "type": "module",
   "version": "1.0.0",
   "description": "",

@@ -16,8 +16,6 @@ const participants = fs.readFileSync(participantsFile) === [] ? [] : JSON.parse(
 const messages = fs.readFileSync(messagesFile) === [] ? [] : JSON.parse(fs.readFileSync(messagesFile));
 
 
-console.log(participants, messages);
-
 app.post("/participants", (req, res) => {
     let user = req.body;
     const userValidation = Joi.object({
@@ -36,7 +34,7 @@ app.post("/participants", (req, res) => {
             to: "Todos",
             text: "entered the room...",
             type: "status",
-            time: dayjs(user.lastStatus).format("HH:MM:ss") 
+            time: dayjs(user.lastStatus).format("h:mm:ss A") 
         });
         fs.writeFileSync(messagesFile, JSON.stringify(messages))
         res.status(200).send();
@@ -77,7 +75,7 @@ app.post("/messages", (req, res) => {
 
     if(!messageValidator.validate(verifiedMessage).error && isParticipating){
         verifiedMessage.from = stripHtml(sender).result.trim();
-        verifiedMessage.time = dayjs(Date.now()).format("HH:MM:ss");
+        verifiedMessage.time = dayjs(Date.now()).format("h:mm:ss A");
         messages.push(verifiedMessage);
         fs.writeFileSync(messagesFile, JSON.stringify(messages))
         res.status(200).send();    
@@ -114,11 +112,11 @@ setInterval(() => {
     participants.forEach((p,i) => {
         if((Date.now() - p.lastStatus) > 10000){
            participants.splice(i,1)
-           fs.writeFileSync(participantsFile, JSON.stringify(participants))
-           messages.push({from: p.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format('HH:MM:ss')}) 
-           fs.writeFileSync(messagesFile, JSON.stringify(messages))
+           messages.push({from: p.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format('h:mm:ss A')}) 
         }    
     })
+    fs.writeFileSync(participantsFile, JSON.stringify(participants))
+    fs.writeFileSync(messagesFile, JSON.stringify(messages))
 }, 15000)
 
 app.listen(4000);
